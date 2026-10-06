@@ -1,6 +1,4 @@
 export PATH=$HOME/bin:/usr/local/bin:$PATH
-export PATH=$HOME/.composer/vendor/bin:$PATH
-export PATH=$HOME/.yarn/bin:$PATH
 export PATH=/usr/local/sbin:$PATH
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -19,5 +17,10 @@ export EDITOR='vim'
 
 source "$HOME/dotfiles/aliases"
 
-eval "$(fnm env --use-on-cd)"
-
+# Aliases
+alias zshconfig="vim $HOME/dotfiles/zshrc"
+alias update="$HOME/dotfiles/update"
+alias updates="vim $HOME/dotfiles/update"
+alias dirsize="du -h -c ./ | tail -1"
+alias code="cd $HOME/Projects"
+alias fixspotify="brew uninstall spotify && brew install --cask spotify"
