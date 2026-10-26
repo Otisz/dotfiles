@@ -1,6 +1,11 @@
 #!/usr/bin/env zsh
 
 emulate zsh
+autoload -U colors && colors
+
+###############
+##   STEPS   ##
+###############
 
 spotify_outdated=0
 
@@ -39,68 +44,77 @@ steps=(
     "softwareupdate -l"          macos_updates
 )
 
-autoload -U colors && colors
+###############
+##  HELPERS  ##
+###############
 
-heading="$bold_color$fg[cyan]"
-cyan=$fg[cyan]
-yellow=$fg[yellow]
-green=$fg[green]
-red=$fg[red]
-bold=$bold_color
-reset=$reset_color
+usage() {
+    print -u2 "Usage: update [-y|--yes]"
+}
 
-assume_yes=0
+heading() {
+    print -r -- $'\n'"$bold_color${fg[cyan]}==> $1$reset_color"
+}
 
-case "$1" in
-    -y|--yes) assume_yes=1 ;;
-    "") ;;
-    *)
-        print -u2 "Usage: update [-y|--yes]"
-        exit 1
-        ;;
-esac
+confirm() {
+    local answer
+    print -rn -- "Run '${fg[cyan]}$1$reset_color'? ${fg[yellow]}[Y/n]$reset_color "
+    read -r answer
+    [[ "${answer:l}" == (|y|yes) ]]
+}
 
-labels=()
-results=()
-failed=0
-
-for label step in "${steps[@]}"; do
-    labels+=("$label")
-
-    if (( $+functions[${step}_needed] )) && ! ${step}_needed; then
-        results+=(skipped)
-        continue
-    fi
-
-    print -r -- $'\n'"$heading==> $label$reset"
-
-    if (( ! assume_yes )); then
-        print -rn -- "Run '$cyan$label$reset'? ${yellow}[Y/n]$reset "
-        read -r answer
-        case "${answer:l}" in
-            ""|y|yes) ;;
-            *)
-                results+=(skipped)
-                continue
-                ;;
+print_summary() {
+    local label result
+    print -r -- $'\n'"$bold_color==> Summary$reset_color"
+    for label result in "$@"; do
+        case "$result" in
+            ok)      print -r -- "  ${fg[green]}✔$reset_color $label" ;;
+            failed)  print -r -- "  ${fg[red]}✘$reset_color $label" ;;
+            skipped) print -r -- "  ${fg[yellow]}–$reset_color $label" ;;
         esac
-    fi
+    done
+}
 
-    if $step; then
-        results+=(ok)
-    else
-        results+=(failed)
-        failed=1
-    fi
-done
+##############
+##   MAIN   ##
+##############
 
-print -r -- $'\n'"$bold==> Summary$reset"
-for i in {1..${#labels}}; do
-    case "${results[$i]}" in
-        ok)      print -r -- "  $green✔$reset ${labels[$i]}" ;;
-        failed)  print -r -- "  $red✘$reset ${labels[$i]}" ;;
-        skipped) print -r -- "  $yellow–$reset ${labels[$i]}" ;;
+main() {
+    local assume_yes=0 failed=0 label step
+    local -a summary
+
+    case "$1" in
+        -y|--yes) assume_yes=1 ;;
+        "") ;;
+        *)
+            usage
+            return 1
+            ;;
     esac
-done
 
-exit $failed
+    for label step in "${steps[@]}"; do
+        if (( $+functions[${step}_needed] )) && ! ${step}_needed; then
+            summary+=("$label" skipped)
+            continue
+        fi
+
+        heading "$label"
+
+        if (( ! assume_yes )) && ! confirm "$label"; then
+            summary+=("$label" skipped)
+            continue
+        fi
+
+        if $step; then
+            summary+=("$label" ok)
+        else
+            summary+=("$label" failed)
+            failed=1
+        fi
+    done
+
+    print_summary "${summary[@]}"
+    return $failed
+}
+
+main "$@"
