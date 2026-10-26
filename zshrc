@@ -1,8 +1,12 @@
 export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=/usr/local/sbin:$PATH
 export ZSH="$HOME/.oh-my-zsh"
+export PATH="/Users/otisz/.bun/bin:$PATH"
 
 source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source "$HOME/.zshenv"
+
+setopt NO_NOMATCH NO_EQUALS
 
 ZSH_THEME="robbyrussell"
 
@@ -14,8 +18,6 @@ plugins=(git)
 source $ZSH/oh-my-zsh.sh
 
 export EDITOR='vim'
-
-source "$HOME/dotfiles/aliases"
 
 # Aliases
 alias zshconfig="vim $HOME/dotfiles/zshrc"
