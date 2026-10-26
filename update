@@ -59,7 +59,7 @@ heading() {
 confirm() {
     local answer
     print -rn -- "Run '${fg[cyan]}$1$reset_color'? ${fg[yellow]}[Y/n]$reset_color "
-    read -rk 1 -u 0 answer
+    read -rk 1 answer
     [[ "$answer" == $'\n' ]] || print
     [[ "$answer" == ($'\n'|y|Y) ]]
 }
