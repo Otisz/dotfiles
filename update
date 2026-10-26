@@ -66,7 +66,7 @@ confirm() {
 
 print_summary() {
     local label result
-    print -r -- $'\n'"$bold_color==> Summary$reset_color"
+    print -r -- $'\n'"$bold_color==> Summary$reset_color (${fg[green]}✔$reset_color ok  ${fg[red]}✘$reset_color failed  ${fg[yellow]}–$reset_color skipped)"
     for label result in "$@"; do
         case "$result" in
             ok)      print -r -- "  ${fg[green]}✔$reset_color $label" ;;
@@ -74,7 +74,6 @@ print_summary() {
             skipped) print -r -- "  ${fg[yellow]}–$reset_color $label" ;;
         esac
     done
-    print -r -- "  ${fg[green]}✔$reset_color ok  ${fg[red]}✘$reset_color failed  ${fg[yellow]}–$reset_color skipped"
 }
 
 ##############
