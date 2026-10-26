@@ -74,6 +74,7 @@ print_summary() {
             skipped) print -r -- "  ${fg[yellow]}–$reset_color $label" ;;
         esac
     done
+    print -r -- "  ${fg[green]}✔$reset_color ok  ${fg[red]}✘$reset_color failed  ${fg[yellow]}–$reset_color skipped"
 }
 
 ##############
