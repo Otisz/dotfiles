@@ -1,58 +1,84 @@
 #!/usr/bin/env zsh
 
+emulate zsh
+
+brew_update()   { brew update }
+brew_upgrade()  { brew upgrade --greedy }
+brew_cleanup()  { brew cleanup --prune=0 -s }
+macos_updates() { softwareupdate -l }
+
+omz_update() {
+    if [[ -z "$ZSH" ]]; then
+        print -u2 "ZSH is not set, cannot find Oh My Zsh"
+        return 1
+    fi
+    "$ZSH/tools/upgrade.sh"
+}
+
 steps=(
-    "brew update"       "brew update"
-    "brew upgrade"      "brew upgrade --greedy"
-    "brew cleanup"      "brew cleanup --prune=0 -s"
-    "omz update"        '"$ZSH/tools/upgrade.sh"'
-    "macOS updates"     "softwareupdate -l"
+    "brew update"                brew_update
+    "brew upgrade --greedy"      brew_upgrade
+    "brew cleanup --prune=0 -s"  brew_cleanup
+    "omz update"                 omz_update
+    "softwareupdate -l"          macos_updates
 )
 
-assume_yes=false
+autoload -U colors && colors
+
+heading="$bold_color$fg[cyan]"
+cyan=$fg[cyan]
+yellow=$fg[yellow]
+green=$fg[green]
+red=$fg[red]
+bold=$bold_color
+reset=$reset_color
+
+assume_yes=0
 
 case "$1" in
-    -y|--yes) assume_yes=true ;;
+    -y|--yes) assume_yes=1 ;;
     "") ;;
     *)
-        print "Usage: update [-y|--yes]"
+        print -u2 "Usage: update [-y|--yes]"
         exit 1
         ;;
 esac
 
 labels=()
 results=()
-failed=false
+failed=0
 
-for label command in "${steps[@]}"; do
-    print -P "\n%B%F{cyan}==> $label%f%b"
+for label step in "${steps[@]}"; do
+    labels+=("$label")
+    print -r -- $'\n'"$heading==> $label$reset"
 
-    if ! $assume_yes; then
-        print -nP "Run '%F{cyan}$command%f'? %F{yellow}[Y/n]%f "
+    if (( ! assume_yes )); then
+        print -rn -- "Run '$cyan$label$reset'? ${yellow}[Y/n]$reset "
         read -r answer
-        if [[ -n "$answer" && "$answer" != [Yy] ]]; then
-            labels+=("$label")
-            results+=(skipped)
-            continue
-        fi
+        case "${answer:l}" in
+            ""|y|yes) ;;
+            *)
+                results+=(skipped)
+                continue
+                ;;
+        esac
     fi
 
-    labels+=("$label")
-    if eval "$command"; then
+    if $step; then
         results+=(ok)
     else
         results+=(failed)
-        failed=true
+        failed=1
     fi
 done
 
-print -P "\n%B==> Summary%b"
+print -r -- $'\n'"$bold==> Summary$reset"
 for i in {1..${#labels}}; do
     case "${results[$i]}" in
-        ok)      print -P "  %F{green}✔%f ${labels[$i]}" ;;
-        failed)  print -P "  %F{red}✘%f ${labels[$i]}" ;;
-        skipped) print -P "  %F{yellow}–%f ${labels[$i]}" ;;
+        ok)      print -r -- "  $green✔$reset ${labels[$i]}" ;;
+        failed)  print -r -- "  $red✘$reset ${labels[$i]}" ;;
+        skipped) print -r -- "  $yellow–$reset ${labels[$i]}" ;;
     esac
 done
 
-$failed && exit 1
-exit 0
+exit $failed
