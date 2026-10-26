@@ -3,9 +3,25 @@
 emulate zsh
 
 brew_update()   { brew update }
-brew_upgrade()  { brew upgrade --greedy }
 brew_cleanup()  { brew cleanup --prune=0 -s }
 macos_updates() { softwareupdate -l }
+
+fix_spotify() {
+    brew uninstall spotify && brew install --cask spotify
+}
+
+brew_upgrade() {
+    local spotify_outdated=0
+    brew outdated --cask --greedy --quiet | grep -qx spotify && spotify_outdated=1
+
+    brew upgrade --greedy
+    local upgrade_status=$?
+
+    if (( spotify_outdated )); then
+        fix_spotify || return
+    fi
+    return $upgrade_status
+}
 
 omz_update() {
     if [[ -z "$ZSH" ]]; then
