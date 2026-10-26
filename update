@@ -1,76 +1,58 @@
 #!/usr/bin/env zsh
 
-###############
-##   SETUP   ##
-###############
+steps=(
+    "brew update"       "brew update"
+    "brew upgrade"      "brew upgrade --greedy"
+    "brew cleanup"      "brew cleanup --prune=0 -s"
+    "omz update"        '"$ZSH/tools/upgrade.sh"'
+    "macOS updates"     "softwareupdate -l"
+)
 
-source $HOME/dotfiles/colors
+assume_yes=false
 
-function question {
-    ask="Run '"
-    ask+=$iCyan
-    ask+=$1
-    ask+=$Reset
-    ask+="'?"
-    ask+=$Yellow
-    ask+=" [Y/n] "
-    ask+=$Reset
+case "$1" in
+    -y|--yes) assume_yes=true ;;
+    "") ;;
+    *)
+        print "Usage: update [-y|--yes]"
+        exit 1
+        ;;
+esac
 
-    echo -n "$ask"
-    read wannaUpdate
-}
+labels=()
+results=()
+failed=false
 
-function runCommand {
-    if [ "$wannaUpdate" = "" -o "$wannaUpdate" = "Y" -o "$wannaUpdate" = "y" ]; then
-        $*
+for label command in "${steps[@]}"; do
+    print -P "\n%B%F{cyan}==> $label%f%b"
+
+    if ! $assume_yes; then
+        print -nP "Run '%F{cyan}$command%f'? %F{yellow}[Y/n]%f "
+        read -r answer
+        if [[ -n "$answer" && "$answer" != [Yy] ]]; then
+            labels+=("$label")
+            results+=(skipped)
+            continue
+        fi
     fi
-}
 
-function line {
-    echo ""
-}
+    labels+=("$label")
+    if eval "$command"; then
+        results+=(ok)
+    else
+        results+=(failed)
+        failed=true
+    fi
+done
 
+print -P "\n%B==> Summary%b"
+for i in {1..${#labels}}; do
+    case "${results[$i]}" in
+        ok)      print -P "  %F{green}✔%f ${labels[$i]}" ;;
+        failed)  print -P "  %F{red}✘%f ${labels[$i]}" ;;
+        skipped) print -P "  %F{yellow}–%f ${labels[$i]}" ;;
+    esac
+done
 
-##############
-##   MAIN   ##
-##############
-
-echo $bGreen
-echo "############################"
-echo "# Let's update your system #"
-echo "############################"
-echo $Reset
-
-question "valet stop"
-runCommand valet stop
-
-line
-
-question "brew update"
-runCommand brew update
-
-line
-
-question "brew upgrade"
-runCommand brew upgrade --greedy
-
-line
-
-question "brew cleanup"
-runCommand brew cleanup --prune=0 -s
-
-line
-
-question "composer global update"
-runCommand composer global update
-
-line
-
-question "valet install"
-runCommand valet install
-
-echo $bGreen
-echo "#############################"
-echo "# Everything is up to date! #"
-echo "#############################"
-
+$failed && exit 1
+exit 0
